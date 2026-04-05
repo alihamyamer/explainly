@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Explainly",
+  "version": "0.1.0",
+  "description": "Explain anything with hover using AI.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "src/content.js"
+      ]
+    }
+  ],
+  "options_page": "src/options.html"
+}
