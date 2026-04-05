@@ -1,5 +1,5 @@
 const ENV_CONFIG = {
-  dev: { apiBaseUrl: "https://explainly-dev.vercel.app" },
+  dev: { apiBaseUrl: "https://explainly-ten.vercel.app" },
   staging: { apiBaseUrl: "https://explainly-staging.vercel.app" },
   prod: { apiBaseUrl: "https://explainly.vercel.app" }
 };
