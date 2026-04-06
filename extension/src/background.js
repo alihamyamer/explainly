@@ -13,8 +13,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 async function handleExplain(payload) {
-  const cfg = await chrome.storage.sync.get(["environment", "featureFlags"]);
+  const cfg = await chrome.storage.sync.get(["persona", "environment", "featureFlags"]);
   const env = cfg.environment || "dev";
+  const persona = cfg.persona || "General";
   const flags = cfg.featureFlags || { enableExplainer: true };
   if (!flags.enableExplainer) throw new Error("Explainer is disabled");
   const apiBaseUrl = ENV_CONFIG[env]?.apiBaseUrl || ENV_CONFIG.dev.apiBaseUrl;
@@ -24,7 +25,7 @@ async function handleExplain(payload) {
       "Content-Type": "application/json",
       "x-extension-id": chrome.runtime.id
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ ...payload, persona })
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));

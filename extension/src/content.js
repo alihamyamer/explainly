@@ -1,28 +1,29 @@
-let hoverTimer = null;
-
-document.addEventListener("mouseover", (event) => {
-  const text = extractText(event.target);
+document.addEventListener("mouseup", async (event) => {
+  const text = getSelectedText();
   if (!text) return;
-  clearTimeout(hoverTimer);
-  hoverTimer = setTimeout(async () => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: "EXPLAIN_TEXT",
-        payload: { text, style: "simple" }
-      });
-      if (!response?.ok) return;
-      showTooltip(event.clientX, event.clientY, response.result.explanation);
-    } catch {
-      // Keep content script silent on network errors.
-    }
-  }, 600);
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "EXPLAIN_TEXT",
+      payload: { text, style: "simple" }
+    });
+    if (!response?.ok) return;
+    showTooltip(event.clientX, event.clientY, response.result.explanation);
+  } catch {
+    // Keep content script silent on network errors.
+  }
 });
 
-function extractText(target) {
-  const raw = target?.textContent || "";
+document.addEventListener("mousedown", () => {
+  const existing = document.getElementById("__explainly_tooltip");
+  if (existing) existing.remove();
+});
+
+function getSelectedText() {
+  const raw = window.getSelection().toString();
   const trimmed = raw.trim().replace(/\s+/g, " ");
-  if (trimmed.length < 8) return "";
-  return trimmed.slice(0, 600);
+  if (trimmed.length < 8 || trimmed.length > 600) return "";
+  return trimmed;
 }
 
 function showTooltip(x, y, text) {
@@ -44,5 +45,5 @@ function showTooltip(x, y, text) {
   node.style.lineHeight = "1.4";
   node.style.boxShadow = "0 8px 20px rgba(0,0,0,0.35)";
   document.body.appendChild(node);
-  setTimeout(() => node.remove(), 5000);
+  setTimeout(() => node.remove(), 8000);
 }

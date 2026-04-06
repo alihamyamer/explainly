@@ -44,8 +44,9 @@ module.exports = withRequestTiming(async function explain(req, res, requestId) {
     return;
   }
 
+  const persona = typeof body.persona === "string" ? body.persona.trim() : "General";
   const cfg = getConfig();
-  const explanation = await explainWithAi(cfg, sanitized, body.style || "simple");
+  const explanation = await explainWithAi(cfg, sanitized, body.style || "simple", persona);
 
   log("info", "explain.success", {
     requestId,
@@ -59,13 +60,38 @@ module.exports = withRequestTiming(async function explain(req, res, requestId) {
   });
 });
 
-async function explainWithAi(cfg, text, style) {
+async function explainWithAi(cfg, text, style, persona) {
   if (!cfg.aiApiKey) {
-    return `Local fallback (${style}): ${truncate(text)}`;
+    return `Local fallback (${style}): ${text.slice(0, 320)}`;
   }
-  return `AI explanation (${style}): ${truncate(text)}`;
-}
 
-function truncate(value) {
-  return value.length > 320 ? `${value.slice(0, 317)}...` : value;
+  const systemPrompt =
+    persona === "General"
+      ? "You are a knowledgeable assistant. Explain the fundamental concepts of the following text in clear, plain language."
+      : `You are a ${persona}. Explain the fundamental concepts of the following text in a clear and concise way.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${cfg.aiApiKey}`
+    },
+    body: JSON.stringify({
+      model: cfg.aiModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: text }
+      ],
+      max_tokens: 300,
+      temperature: 0.5
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `OpenAI request failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content?.trim() || "No explanation available.";
 }
